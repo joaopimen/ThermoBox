@@ -2,12 +2,11 @@
 
 import numpy as np
 import streamlit as st
-
 import constants
 from auxfuncs import show_volume_plot  # still here if you want to reuse later
 
 from lle_calcs import lle_calc_volume, lle_calc, kow_calc
-import vle_calcs
+import ThermoBox.vle_calcs as vle_calcs
 
 # -----------------------------
 # Parameter + database loaders
@@ -18,17 +17,9 @@ def get_parameters(method, comp, solvents=None):
     if method == "unifac-lle":
         from get_unifaclle_parameters import get_unifac_parameters
         params = get_unifac_parameters(comp)
-    elif method == "unifac":
+    elif method == "unifac-vle":
         from get_unifac_parameters import get_unifac_parameters
         params = get_unifac_parameters(comp)
-    elif method == "unifac-debye-huckel":
-        from get_unifacllepdh_parameters import get_unifac_parameters
-        params = get_unifac_parameters(comp)
-        params["solvents"] = solvents
-    elif method == "unifac-vle-debye-huckel":
-        from get_unifacpdh_parameters import get_unifac_parameters
-        params = get_unifac_parameters(comp)
-        params["solvents"] = solvents
     # COSMO-SAC models currently reuse the UNIFAC-VLE parameter loader
     elif method in ("cosmosac-2002", "cosmosac-2010", "cosmosac-dsp"):
         from get_unifac_parameters import get_unifac_parameters
@@ -52,10 +43,6 @@ def get_component_database(model: str):
         from unifac_database import unifac_molecules as db_molecules
     elif model == "unifac-lle":
         from unifac_lle_database import unifac_molecules as db_molecules
-    elif model == "unifac-debye-huckel":
-        from unifac_llepdh_database import unifac_molecules as db_molecules
-    elif model == "unifac-vle-debye-huckel":
-        from unifac_pdh_database import unifac_molecules as db_molecules
     elif model in ("cosmosac-2002", "cosmosac-2010", "cosmosac-dsp"):
         # share the same component list as UNIFAC-LLE
         from unifac_lle_database import unifac_molecules as db_molecules
@@ -65,68 +52,10 @@ def get_component_database(model: str):
 
 
 # -----------------------------
-# VLE helper: prepare globals
-# -----------------------------
-
-def prepare_vle_globals(comp, z, params):
-    """
-    [Inference] Prepare globals expected by vle_calcs:
-    comp, params, n, NC, A, B, C.
-
-    - z: array of total moles for each component.
-    - Antoine coefficients are taken from vle_calcs.db (indexed by 'comp').
-    """
-    n = np.array(z, float)
-    NC = len(comp)
-
-    A = np.zeros(NC)
-    B = np.zeros(NC)
-    C = np.zeros(NC)
-
-    # Assumes antoine_coeff.csv has columns 'comp','A','B','C'
-    for i, cname in enumerate(comp):
-        row = vle_calcs_joao_marcelo.db.loc[cname]
-        A[i] = row["A"]
-        B[i] = row["B"]
-        C[i] = row["C"]
-
-    # Attach as module globals (this matches how your original script works)
-    vle_calcs_joao_marcelo.comp = comp
-    vle_calcs_joao_marcelo.params = params
-    vle_calcs_joao_marcelo.n = n
-    vle_calcs_joao_marcelo.NC = NC
-    vle_calcs_joao_marcelo.A = A
-    vle_calcs_joao_marcelo.B = B
-    vle_calcs_joao_marcelo.C = C
-
-
-def run_vle_dew_T(comp, z, T_K, params):
-    """
-    VLE: dew point at known temperature (T known, solve for P and liquid x).
-
-    - T_K is Kelvin from UI; vle_calcs expects °C and internally adds 273.15.
-    """
-    prepare_vle_globals(comp, z, params)
-    z_mf = np.array(z, float) / np.sum(z)
-    T_C = T_K - 273.15
-    return vle_calcs_joao_marcelo.dew_point_T_known(z_mf, T_C)
-
-
-def run_vle_bubble_T(comp, z, T_K, params):
-    """
-    VLE: bubble point at known temperature (T known, solve for P and vapor y).
-    """
-    prepare_vle_globals(comp, z, params)
-    z_mf = np.array(z, float) / np.sum(z)
-    T_C = T_K - 273.15
-    return vle_calcs_joao_marcelo.bubble_point_T_known(z_mf, T_C)
-
-
-# -----------------------------
 # Calculation dispatcher
 # -----------------------------
 
-def run_thermobox_calculation(calc_type, comp, z, T, method, params, extra=None):
+def run_thermobox_calculation(calc_type, comp, z, Z, method, params, extra=None):
     """
     Wrapper to call your existing calculation functions.
     """
@@ -134,26 +63,40 @@ def run_thermobox_calculation(calc_type, comp, z, T, method, params, extra=None)
         return lle_calc_volume(comp, np.array(z, float), T, method, params)
 
     elif calc_type == "LLE":
-        return lle_calc(comp, np.array(z, float), T, method, params)
+        return lle_calc(comp, np.array(z, float), Z, method, params)
 
     elif calc_type == "Kow":
         pH = extra["pH"]
         solute = extra["solute"]
-        return kow_calc(comp, np.array(z, float), pH, solute, T, method, params)
+        return kow_calc(comp, np.array(z, float), pH, solute, Z, method, params)
 
-    elif calc_type == "VLE – Dew point (T)":
+    elif calc_type == "VLE - Dew point (T)":
         if method != "unifac-vle":
             raise ValueError(
                 "VLE currently implemented only for 'unifac-vle' in vle_calcs.py."
             )
-        return run_vle_dew_T(comp, z, T, params)
+        return vle_calcs.dew_point_T_known(comp, z, Z, params)
 
-    elif calc_type == "VLE – Bubble point (T)":
+    elif calc_type == "VLE - Bubble point (T)":
         if method != "unifac-vle":
             raise ValueError(
                 "VLE currently implemented only for 'unifac-vle' in vle_calcs.py."
             )
-        return run_vle_bubble_T(comp, z, T, params)
+        return vle_calcs.bubble_point_T_known(comp, z, Z, params)
+
+    elif calc_type == "VLE - Dew point (P)":
+        if method != "unifac-vle":
+            raise ValueError(
+                "VLE currently implemented only for 'unifac-vle' in vle_calcs.py."
+            )
+        return vle_calcs.dew_point_P_known(comp, z, Z, params)
+
+    elif calc_type == "VLE - Bubble point (P)":
+        if method != "unifac-vle":
+            raise ValueError(
+                "VLE currently implemented only for 'unifac-vle' in vle_calcs.py."
+            )
+        return vle_calcs.bubble_point_P_known(comp, z, Z, params)
 
     else:
         raise ValueError(f"Unknown calc_type: {calc_type}")
@@ -168,7 +111,7 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("ThermoBox – A Toolbox for Thermodynamics Calculations")
+st.title("ThermoBox - A Toolbox for Thermodynamics Calculations")
 
 with st.sidebar:
     st.header("Setup")
@@ -179,11 +122,8 @@ with st.sidebar:
         [
             "unifac-vle",
             "unifac-lle",
-            "unifac-debye-huckel",
-            "unifac-vle-debye-huckel",
             "cosmosac-2002",
             "cosmosac-2010",
-            "cosmosac-dsp",
         ],
         index=1,  # unifac-lle by default
     )
@@ -195,8 +135,10 @@ with st.sidebar:
             "LLE Volume",
             "LLE",
             "Kow",
-            "VLE – Dew point (T)",
-            "VLE – Bubble point (T)",
+            "VLE - Dew point (T)",
+            "VLE - Bubble point (T)",
+            "VLE - Dew point (P)",
+            "VLE - Bubble point (P)",
         ],
         index=0,
     )
@@ -220,13 +162,22 @@ with st.sidebar:
     )
 
     # Temperature (used by all calcs; VLE wrappers convert to °C internally)
-    T = st.number_input(
-        "Temperature [K]",
-        min_value=200.0,
-        max_value=800.0,
-        value=298.15,
-        step=1.0,
-    )
+    if calc_type == "VLE - Dew point (P)" or calc_type == "VLE - Bubble point (P)":
+        P = st.number_input(
+            "Pressure [bar]",
+            min_value=0.100,
+            max_value=100.0,
+            value=1.0,
+            step=1.0,
+        )
+    else:
+        T = st.number_input(
+            "Temperature [K]",
+            min_value=200.0,
+            max_value=800.0,
+            value=298.15,
+            step=1.0,
+        )
 
     st.markdown("---")
     st.caption(
@@ -250,11 +201,11 @@ st.markdown(
 calc_help = {
     "LLE Volume": (
         "Given overall moles of each component (feed) and temperature T (K), "
-        "calculates liquid–liquid equilibrium and returns phase compositions, "
+        "calculates liquid-liquid equilibrium and returns phase compositions, "
         "mole splits, and phase volumes."
     ),
     "LLE": (
-        "Given overall moles and temperature T (K), calculates liquid–liquid "
+        "Given overall moles and temperature T (K), calculates liquid-liquid "
         "equilibrium (no explicit volume calculation)."
     ),
     "Kow": (
@@ -262,15 +213,25 @@ calc_help = {
         "temperature T (K) and pH, performs LLE and computes Kow, distribution "
         "coefficient D, and related quantities."
     ),
-    "VLE – Dew point (T)": (
+    "VLE - Dew point (T)": (
         "Given vapor-phase overall composition (feed) and temperature T, "
         "solves the dew-point problem: equilibrium liquid composition x and "
         "system pressure P."
     ),
-    "VLE – Bubble point (T)": (
+    "VLE - Bubble point (T)": (
         "Given liquid-phase overall composition (feed) and temperature T, "
         "solves the bubble-point problem: equilibrium vapor composition y and "
         "system pressure P."
+    ),
+    "VLE - Dew point (P)": (
+        "Given vapor-phase overall composition (feed) and pressure P, "
+        "solves the dew-point problem: equilibrium liquid composition x and "
+        "system temperature T."
+    ),
+    "VLE - Bubble point (P)": (
+        "Given vapor-phase overall composition (feed) and pressure P, "
+        "solves the bubble-point problem: equilibrium liquid composition x and "
+        "system temperature T."
     ),
 }
 
@@ -385,20 +346,6 @@ for i in range(NC):
         unsafe_allow_html=True,
     )
 
-# Optional: choose solvents when using Debye-Hückel
-solvents = None
-if thermo_model == "unifac-debye-huckel":
-    st.subheader("Select Solvents (up to NC-1)")
-    selected_solvents = st.multiselect(
-        "Solvent components",
-        options=comp_list,
-        default=comp_list[: max(0, NC - 1)],
-    )
-    if len(selected_solvents) > (NC - 1):
-        st.error("You can select at most NC-1 solvents.")
-        st.stop()
-    solvents = selected_solvents
-
 # Extra inputs for Kow
 extra_inputs = {}
 if calc_type == "Kow":
@@ -428,10 +375,10 @@ if run_button:
         st.error("Total moles must be > 0.")
         st.stop()
 
-    method = thermo_model  # keep same naming convention as your code
+    method = thermo_model
 
     try:
-        params = get_parameters(method, comp_list, solvents)
+        params = get_parameters(method, comp_list)
     except Exception as e:
         st.exception(f"Error getting parameters: {e}")
         st.stop()
@@ -447,21 +394,24 @@ if run_button:
         extra_inputs["pH"] = pH
         extra_inputs["solute"] = solute
 
-    # 2. VLE extra inputs
-    if calc_type == "VLE":
-        # Convert UI strings to clean internal flags
-        extra_inputs["known_var"] = "T" if known_var.startswith("Temperature") else "P"
-        extra_inputs["feed_phase"] = "x" if feed_phase.startswith("Liquid") else "y"
-        extra_inputs["P_known"] = P_known   # May be None if known_var == "T"
     # -------------------------
     # Run calculation
-    try:
-        result = run_thermobox_calculation(
-            calc_type, comp_list, z, T, method, params, extra_inputs
-        )
-    except Exception as e:
-        st.exception(f"Calculation failed: {e}")
-        st.stop()
+    if calc_type == "VLE - Dew point (P)" or calc_type == "VLE - Bubble point (P)":
+        try:
+            result = run_thermobox_calculation(
+                calc_type, comp_list, z, P, method, params, extra_inputs
+            )
+        except Exception as e:
+            st.exception(f"Calculation failed: {e}")
+            st.stop()
+    else:    
+        try:
+            result = run_thermobox_calculation(
+                calc_type, comp_list, z, T, method, params, extra_inputs
+            )
+        except Exception as e:
+            st.exception(f"Calculation failed: {e}")
+            st.stop()
 
     # -------------------------
     # Display results
@@ -564,33 +514,73 @@ if run_button:
             y="Value",
         )
 
-    elif calc_type == "VLE – Dew point (T)":
-        x, P_sat, P, gamma = result
+    elif calc_type == "VLE - Dew point (T)":
+        x, P_bar, P_sat, gamma = result
 
-        st.write(f"T = {T:.2f} K  ({T - 273.15:.2f} °C)")
-        st.write(f"P (raw units): {float(P):.4f}")
-        st.write(f"P ≈ {float(P) / 750.0:.4f} bar  [assuming P/750 → bar]")
+        st.write(f"T = {float(T):.2f} K = {float(T) - 273.15:.2f} °C")
+        st.write(f"P = {float(P_bar):.4f} bar = {float(P_bar) * 750.06157593:.4f} mmHg")
 
-        st.markdown("**Liquid composition x (dew point)**")
+        st.markdown("**Vapor composition (y)**")
+        st.write(dict(zip(comp_list, [float(yi) for yi in z/(sum(z))])))
+
+        st.markdown("**Liquid composition (x)**")
         st.write(dict(zip(comp_list, [float(xi) for xi in x])))
 
-        st.markdown("**Saturation pressures (P_sat)**")
+        st.markdown("**Saturation pressures (P_sat [mmHg])**")
         st.write(dict(zip(comp_list, [float(p) for p in P_sat])))
 
         st.markdown("**Activity coefficients γ (UNIFAC)**")
         st.write(dict(zip(comp_list, [float(g) for g in gamma])))
 
-    elif calc_type == "VLE – Bubble point (T)":
-        y, P_sat, P, gamma = result
+    elif calc_type == "VLE - Bubble point (T)":
+        y, P_bar, P_sat, gamma = result
 
-        st.write(f"T = {T:.2f} K  ({T - 273.15:.2f} °C)")
-        st.write(f"P (raw units): {float(P):.4f}")
-        st.write(f"P ≈ {float(P) / 750.0:.4f} bar  [assuming P/750 → bar]")
+        st.write(f"T = {float(T):.2f} K = {float(T) - 273.15:.2f} °C")
+        st.write(f"P = {float(P_bar):.4f} bar = {float(P_bar) * 750.06157593:.4f} mmHg")
 
-        st.markdown("**Vapor composition y (bubble point)**")
+        st.markdown("**Vapor composition y**")
         st.write(dict(zip(comp_list, [float(yi) for yi in y])))
 
-        st.markdown("**Saturation pressures (P_sat)**")
+        st.markdown("**Liquid composition (x)**")
+        st.write(dict(zip(comp_list, [float(xi) for xi in z/(sum(z))])))
+
+        st.markdown("**Saturation pressures (P_sat [mmHg])**")
+        st.write(dict(zip(comp_list, [float(p) for p in P_sat])))
+
+        st.markdown("**Activity coefficients γ (UNIFAC)**")
+        st.write(dict(zip(comp_list, [float(g) for g in gamma])))
+
+    elif calc_type == "VLE - Dew point (P)":
+        x, T, P_sat, gamma = result
+
+        st.write(f"T = {float(T):.2f} K = {float(T) - 273.15:.2f} °C")
+        st.write(f"P = {float(P):.4f} bar = {float(P) * 750.06157593:.4f} mmHg")
+
+        st.markdown("**Vapor composition (y)**")
+        st.write(dict(zip(comp_list, [float(yi) for yi in z/(sum(z))])))
+
+        st.markdown("**Liquid composition (x)**")
+        st.write(dict(zip(comp_list, [float(xi) for xi in x])))
+
+        st.markdown("**Saturation pressures (P_sat [mmHg])**")
+        st.write(dict(zip(comp_list, [float(p) for p in P_sat])))
+
+        st.markdown("**Activity coefficients γ (UNIFAC)**")
+        st.write(dict(zip(comp_list, [float(g) for g in gamma])))
+
+    elif calc_type == "VLE - Bubble point (P)":
+        y, T, P_sat, gamma = result
+
+        st.write(f"T = {float(T):.2f} K = {float(T) - 273.15:.2f} °C")
+        st.write(f"P = {float(P):.4f} bar = {float(P) * 750.06157593:.4f} mmHg")
+
+        st.markdown("**Vapor composition y**")
+        st.write(dict(zip(comp_list, [float(yi) for yi in y])))
+
+        st.markdown("**Liquid composition (x)**")
+        st.write(dict(zip(comp_list, [float(xi) for xi in z/(sum(z))])))
+
+        st.markdown("**Saturation pressures (P_sat [mmHg])**")
         st.write(dict(zip(comp_list, [float(p) for p in P_sat])))
 
         st.markdown("**Activity coefficients γ (UNIFAC)**")
