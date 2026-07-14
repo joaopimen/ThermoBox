@@ -3,24 +3,14 @@ import unicodedata
 import inspect
 
 from unifac import unifac_lngamma
-from unifac_pitzer import unifacpitzer_lngamma
-from unifac_debye_huckel import unifacdebyehuckel_lngamma
 from cosmosac2002 import lngamma_2002_from_paths
 from cosmosac2010 import lngamma_2010_from_paths
-from cosmosac2013 import lngamma_2013_from_paths
-from cosmosacpdh import lngamma_pdh_from_paths
-from cosmosacdsp import lngamma_dsp_from_paths
 
 METHODS = {
     'unifac': unifac_lngamma,
     'unifac-lle': unifac_lngamma,
-    'unifac-pitzer': unifacpitzer_lngamma,
-    'unifac-debye-huckel': unifacdebyehuckel_lngamma,
     'cosmosac2002': lngamma_2002_from_paths,
     'cosmosac2010': lngamma_2010_from_paths,
-    'cosmosac2013': lngamma_2013_from_paths,
-    'cosmosacpdh': lngamma_pdh_from_paths,
-    'cosmosacdsp': lngamma_dsp_from_paths,
 }
 
 _COSMO_SIG_EXT = {

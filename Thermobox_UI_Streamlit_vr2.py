@@ -6,7 +6,7 @@ import constants
 from auxfuncs import show_volume_plot  # still here if you want to reuse later
 
 from lle_calcs import lle_calc_volume, lle_calc, kow_calc
-import ThermoBox.vle_calcs as vle_calcs
+import vle_calcs
 
 # -----------------------------
 # Parameter + database loaders

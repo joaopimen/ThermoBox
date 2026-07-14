@@ -135,29 +135,3 @@ def print_interaction_matrix(interaction_params, selected_groups):
     print(interaction_df)
 
     return interaction_df
-
-
-
-
-# ------------------------------------------------------------------------------------------------------------------------------------------------- #
-# ## Call for tests
-# selected_components = ['TOLUENE','ACETIC_ACID','WATER']
-# selected_components = ['1-OCTANOL','WATER']
-
-# # Retrieve UNIFAC parameters dynamically
-# unifac_params = get_unifac_parameters(selected_components)
-# print_unifac_parameters(unifac_params)
-
-# # selected_groups = set()
-# # for group in unifac_params["groups"]:  # "groups" contains the unique functional groups
-# #     main_group = unifac_lle_database.unifac_groups[group]["main_group"]
-# #     selected_groups.add(main_group)
-
-# selected_groups = []
-# for group in unifac_params["groups"]:  
-#     main_group = unifac_lle_database.unifac_groups[group]["main_group"]
-#     selected_groups.append(main_group)  # ✅ KEEPING ALL INSTANCES
-
-# interaction_params = get_interaction_parameters(selected_groups, unifac_lle_database.list_Interactions)
-
-# interaction_df = print_interaction_matrix(interaction_params, selected_groups)

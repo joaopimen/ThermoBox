@@ -253,33 +253,6 @@ def _solve_lnGamma_typed(p_s: List[np.ndarray], sigma: np.ndarray, T: float,
 
     return lnG
 
-# def _solve_lnGamma_typed(p_s, sigma, T, *, max_iter=200, tol=1e-11, damp=0.5):
-#     nb = int(sigma.size)
-#     # DO NOT renormalize here; trust p_s coming from mixer (already area-normalized)
-#     p_s = [np.asarray(ps, float) for ps in p_s]
-
-#     beta = 1.0 / (R_KCAL * T)
-#     DW = _deltaW_blocks(sigma, T)      # (3,3,nb,nb)
-#     A  = np.exp(-beta * DW)            # (3,3,nb,nb)
-
-#     lnG = [np.zeros(nb) for _ in range(3)]
-#     for _ in range(max_iter):
-#         maxchg = 0.0
-#         for t in (0,1,2):
-#             Gt  = np.exp(lnG[t])       # Γ^t
-#             acc = np.zeros(nb)
-#             # z^{t} = Σ_s A^{t,s} @ ( p^s ⊙ Γ^t )
-#             for s in (0,1,2):
-#                 acc += A[t, s] @ (p_s[s] * Gt)
-#             acc = np.where(acc > 0.0, acc, 1e-300)
-#             lnG_new = -np.log(acc)
-#             d = lnG_new - lnG[t]
-#             lnG[t] += damp * d
-#             maxchg = max(maxchg, float(np.max(np.abs(d))))
-#         if maxchg < tol:
-#             break
-#     return lnG
-
 def _pmix_typed(profs: List[SigmaProfile2010], x: np.ndarray) -> List[np.ndarray]:
     """p_mix^s(σ) = [Σ_i x_i dA_i^s(σ)] / [Σ_i x_i A_i],  s ∈ {NHB,OH,OT}"""
     nb = profs[0].sigma.size

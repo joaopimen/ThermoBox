@@ -64,15 +64,6 @@ def test_stability2(N, z, T, R, NC, comp, method, params):
         if xII[i] == 0:
             xII[i] = 1e-6
     
-    # Change this later. Make a more efficient test.
-    # for i in range(NC):
-    #     if xI[i]<0 or xII[i]<0 or z[i]<0:
-    #         print(xI,'\n',xII,'\n',z,'\n')
-    #     if xI[i]>1 or xII[i]>1 or z[i]>1:
-    #         print(xI,'\n',xII,'\n',z,'\n')
-    #     if np.isnan(xI[i]) == 1 or np.isnan(xII[i]) == 1 or np.isnan(z[i]) == 1:
-    #         print(xI,'\n',xII,'\n',z,'\n')
-
     # Calculates the activity coefficient of both phases
     # Activity coefficients
     lngamma_I  = lngamma_calc(xI, [], T, NC, method, comp, params)

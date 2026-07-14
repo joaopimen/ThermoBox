@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.optimize import fsolve, minimize, root
-import unifac_parameters as up
 import unifac as unifac
 from activity_coeff import calculate_activity_coefficients as lngamma_calc
 
@@ -99,11 +98,6 @@ def flash_algorithm_with_constraints(N, z, T, R, NC, comp, method, v0, params):
         lngamma_II = lngamma_calc(xII, N_II, T, NC, method, comp, params)
         gammaI = np.maximum(np.exp(lngamma_I), 1e-10)
         gammaII = np.maximum(np.exp(lngamma_II), 1e-10)
-
-        # Mass balance equations
-        # mass_balance = z - (N_I + N_II)
-        # Isofugacity constraints
-        # isofugacity = xI * gammaI - xII * gammaII
         
         mass_balance = np.zeros(NC)
         isofugacity = np.zeros(NC)
@@ -111,15 +105,9 @@ def flash_algorithm_with_constraints(N, z, T, R, NC, comp, method, v0, params):
             mass_balance[i] = np.abs(z[i] - (N_I[i] + N_II[i]))
             isofugacity[i] = np.abs(xI[i]*gammaI[i] - xII[i]*gammaII[i])
 
-        # Debug prints for mass balance and isofugacity
-        # print(f"Mass balance (should be close to 0): {mass_balance}")
-        # print(f"Isofugacity (should be close to 0): {isofugacity}")
-
         return np.sum(np.concatenate([mass_balance, isofugacity]))
 
     # Solve the system of equations
-    # result = root(equations, np.concatenate([N_I, N_II]), method='hybr')
-
     lb = np.zeros(2*NC)
     ub = np.concatenate([z, z])
     bounds = [(lb[i], ub[i]) for i in range(2 * NC)]

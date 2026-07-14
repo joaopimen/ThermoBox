@@ -1,7 +1,6 @@
 from scipy.optimize import minimize
 import numpy as np
 import unifac
-import unifac_parameters as up
 from pyswarm import pso
 # pip install --upgrade pyswarm
 

@@ -1,12 +1,10 @@
 import numpy as np
 from scipy.optimize import minimize
-import unifac_parameters as up
 import unifac as unifac
 import auxfuncs, flash, gibbs_fun, lle_aux
 from constants import molecular_weights, densities, pKa_list
 from pyswarm import pso
 from activity_coeff import calculate_activity_coefficients as lngamma_calc
-from setchenow_database import setchenow_Aij
 import sys
 
 def lle_calc_volume(comp, z, T, method, params):

@@ -33,7 +33,6 @@ CHB = 85580.0               # kcal/mol * Å^4 / e^2
 # EPS0 = 2.395e-4             # (e^2 mol)/(kcal Å)
 R_KCAL = 0.00198720425864   # kcal/mol/K
 # Misfit prefactor R′ (kcal/mol * Å^4 / e^2) — derived from a_eff and eps0
-# RPRIME = (0.64 * 0.3 * (AEFF ** 1.5)) / EPS0
 RPRIME = 16466.72  # kcal·Å^4/(mol·e^2)
 
 # ---- Canonical sigma grid (51 bins, -0.025..+0.025) ----
