@@ -1,33 +1,44 @@
 # ThermoBox
 
 **ThermoBox** is an open-source Python framework for **thermodynamic modeling, phase equilibrium calculations, and scientific workflows** in chemical engineering.  
-It is being developed to support both **research** and **education**, with emphasis on **liquid–liquid equilibrium (LLE)**, **vapor–liquid equilibrium (VLE)** and **partition/distribution calculations**.
+
+Developed as part of an **academic research project** at the **Federal University of Santa Maria (UFSM)**, ThermoBox bridges the gap between scientific research and practical software development, supporting both **academic research** and **chemical engineering education**. Its primary focus is on **liquid–liquid equilibrium (LLE)**, **vapor–liquid equilibrium (VLE)**, and **partition/distribution calculations**.
 
 ---
 
-## Main goals
+## Main Goals
 
 ThermoBox was designed to:
 
-- provide a modular environment for thermodynamic calculations in Python;
-- support research in **phase equilibria**, especially complex liquid systems;
-- allow comparison between different thermodynamic models;
-- serve as a foundation for future interfaces, educational tools, and scientific applications;
-- facilitate reproducible workflows for academic and industrial studies.
+- Provide a modular, extensible environment for thermodynamic calculations in Python.
+- Support academic and industrial research in **phase equilibria**, especially complex liquid systems.
+- Enable seamless comparison between different thermodynamic models and activity-coefficient approaches.
+- Serve as a foundation for educational tools, interactive interfaces, and scientific applications.
+- Facilitate reproducible scientific workflows and data analysis.
 
 ---
 
-## Current and intended scope
+## Academic Context & Research
 
-Depending on the current stage of the repository, ThermoBox may include or is planned to include support for:
+This project is actively developed within an academic environment, serving as a core computational tool for research in thermodynamics. 
 
-- **LLE calculations**
-- **VLE calculations**
-- **flash calculations**
-- **activity-coefficient models**
-- **COSMO-SAC-based workflows**
-- **UNIFAC-based workflows**
-- **electrolyte and salting effects**
-- **distribution coefficient / partition calculations**
-- **phase-volume calculations**
-- **scientific plotting and data analysis**
+* **Institution:** Federal University of Santa Maria (UFSM)
+* **Status:** Active Academic Research & Development
+
+---
+
+## Current Scope
+
+ThermoBox includes:
+
+- **Equilibrium Calculations:** LLE, VLE, and Flash calculations.
+- **Thermodynamic Models:** Activity-coefficient models, COSMO-SAC-based workflows and UNIFAC-based workflows.
+- **Specialized Phenomena:** Distribution coefficients (partitioning) and phase-volume calculations.
+
+---
+
+## 📬 Contact / Author
+
+**João Marcelo Pinto Mendes**
+- **Email:** joaomarcelo.mendes@hotmail.com
+- **LinkedIn:** [linkedin.com/in/joaopimen](https://www.linkedin.com/in/joaopimen/)
