@@ -37,7 +37,7 @@ ThermoBox includes:
 
 ---
 
-## 📬 Contact / Author
+## 📬 Contact
 
 **João Marcelo Pinto Mendes**
 - **Email:** joaomarcelo.mendes@hotmail.com
